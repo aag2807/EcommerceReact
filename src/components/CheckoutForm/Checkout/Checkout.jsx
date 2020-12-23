@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
+  CssBaseline,
   Paper,
   Stepper,
   Step,
@@ -9,7 +10,7 @@ import {
   Divider,
   Button,
 } from "@material-ui/core";
-
+import { useHistory } from "react-router-dom";
 import { commerce } from "../../../lib/commerce";
 import useStyles from "./styles";
 import AddressForm from "../AddressForm/AddressForm";
@@ -17,11 +18,12 @@ import PaymentForm from "../PaymentForm/PaymentForm";
 
 const steps = ["Shipping address", "Payment details"];
 
-const Checkout = ({ cart }) => {
+const Checkout = ({ cart, order, onCaptureCheckout, error }) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [checkoutToken, setCheckoutToken] = useState(null)
-  const [shippingData, setShippingData] = useState({})  
+  const [checkoutToken, setCheckoutToken] = useState(null);
+  const [shippingData, setShippingData] = useState({});
   const classes = useStyles();
+  const history = useHistory();
 
   useEffect(() => {
     const generateToken = async () => {
@@ -29,32 +31,42 @@ const Checkout = ({ cart }) => {
         const token = await commerce.checkout.generateToken(cart.id, {
           type: "cart",
         });
-        setCheckoutToken(token)
+        setCheckoutToken(token);
       } catch (E) {
         console.error(E);
+        history.pushState("/");
       }
     };
 
     generateToken();
   }, [cart]);
 
-  const nextStep = () => setActiveStep((state) => state + 1) 
-  const prevStep = () => setActiveStep((state) => state - 1) 
+  const nextStep = () => setActiveStep((state) => state + 1);
+  const prevStep = () => setActiveStep((state) => state - 1);
 
   const next = (data) => {
-    setShippingData(data)
-    nextStep()
-  }
+    setShippingData(data);
+    nextStep();
+  };
 
-
-
-
-  const Form = () => (activeStep === 0 ? <AddressForm  checkoutToken={checkoutToken} next={next} /> : <PaymentForm />);
+  const Form = () =>
+    activeStep === 0 ? (
+      <AddressForm checkoutToken={checkoutToken} next={next} />
+    ) : (
+      <PaymentForm
+        next={nextStep}
+        onCaptureCheckout={onCaptureCheckout}
+        prevStep={prevStep}
+        checkoutToken={checkoutToken}
+        shippingData={shippingData}
+      />
+    );
 
   const Confirmation = () => <div>Confirmation</div>;
 
   return (
     <>
+      <CssBaseline />
       <div className={classes.toolbar} />
       <main className={classes.layout}>
         <Paper className={classes.paper}>
@@ -68,7 +80,11 @@ const Checkout = ({ cart }) => {
               </Step>
             ))}
           </Stepper>
-          {activeStep === steps.length ? <Confirmation /> : checkoutToken && <Form />}
+          {activeStep === steps.length ? (
+            <Confirmation />
+          ) : (
+            checkoutToken && <Form />
+          )}
         </Paper>
       </main>
     </>

@@ -104,7 +104,16 @@ const AddressForm = ({ checkoutToken, next }) => {
         Shipping Address
       </Typography>
       <FormProvider {...methods}>
-        <form onSubmit={(data) => next({...data}) }>
+        <form
+          onSubmit={(data) =>
+            next({
+              ...data,
+              shippingCountry,
+              shippingSubdivision,
+              shippingOption,
+            })
+          }
+        >
           <Grid container spacing={3}>
             <FormInput name="firstName" label="First Name" />
             <FormInput name="lastName" label="Last Name" />

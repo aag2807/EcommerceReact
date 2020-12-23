@@ -3,13 +3,16 @@ import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import { Products, Navbar, Cart, Checkout } from "./components";
 import { commerce } from "./lib/commerce";
 
-
-
-
 const App = () => {
   const [products, setProducts] = useState([]);
-
+  const [order, setOrder] = useState({});
   const [cart, setCart] = useState({});
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCart();
+  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -19,11 +22,6 @@ const App = () => {
       console.error(e);
     }
   };
-
-  useEffect(() => {
-    fetchProducts();
-    fetchCart();
-  }, []);
 
   const fetchCart = async () => {
     try {
@@ -57,6 +55,27 @@ const App = () => {
     setCart(cart);
   };
 
+  const refreshCart = async () => {
+    const newCart = await commerce.cart.refresh();
+
+    setCart(newCart);
+  };
+
+  const handleCaptureCheckout = async (checkoutTokenId, newOrder) => {
+    try {
+      const incomingOrder = await commerce.checkout.capture(
+        checkoutTokenId,
+        newOrder
+      );
+      setOrder(incomingOrder);
+      refreshCart();
+    } catch (E) {
+      console.error(E);
+      setErrorMessage(E.data.error.message);
+
+    }
+  };
+
   return (
     <Router>
       <div>
@@ -73,8 +92,13 @@ const App = () => {
               cart={cart}
             />
           </Route>
-          <Route exact path='/checkout'>
-            <Checkout cart={cart}/>
+          <Route exact path="/checkout">
+            <Checkout
+              cart={cart}
+              order={order}
+              onCaptureCheckout={handleCaptureCheckout}
+              error={errorMessage}
+            />
           </Route>
         </Switch>
       </div>
